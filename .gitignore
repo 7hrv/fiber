@@ -1,3 +1,6 @@
 .last_commit_time
 commit_backdate.sh
 merge_backdate.sh
+
+build/
+compile_commands.json

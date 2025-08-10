@@ -1,0 +1,50 @@
+---
+# .clang-format
+Language: Cpp
+BasedOnStyle: Google
+
+# The setting you specifically asked for:
+PointerAlignment: Left
+
+# Matches your 'modernize' tidy checks
+Standard: Latest
+ColumnLimit: 100
+IndentWidth: 2
+ContinuationIndentWidth: 4
+
+# Ensures consistent spacing for references and pointers
+DerivePointerAlignment: false
+
+# Bracing style (Attach to end of line, standard for Google style)
+BreakBeforeBraces: Attach
+
+# Clean up include headers automatically
+IncludeIsMainRegex: '(Test)?$'
+
+IncludeCategories:
+  # Category 1: Paired header file for this file (e.g. add.cpp -> add.h / add.hpp)
+  # Assigned priority 1 if explicit matching is preferred over default priority 0
+  - Regex: '^"(.*)\.(h|hpp)"$'
+    Priority: 1
+    SortPriority: 1
+
+  # Category 2: Other local/project headers (quoted includes e.g. "mymath.h", "utils/helpers.hpp")
+  - Regex: '^".*"'
+    Priority: 2
+    SortPriority: 2
+
+  # Category 3: 3rd party library headers (angle brackets, but not standard library)
+  - Regex: '^<.*>'
+    Priority: 3
+    SortPriority: 3
+
+IncludeBlocks: Regroup
+SortIncludes: true
+
+# Refines how function arguments are packed
+BinPackArguments: false
+BinPackParameters: false
+
+# Allows short functions on a single line if they fit
+AllowShortFunctionsOnASingleLine: Inline
+---
