@@ -17,6 +17,7 @@ void Scheduler::run() {
 
     fb->set_state(Fiber::FiberState::RUNNING);
 
+    // TODO: multi-level pointer conversion
     context_switch(&_stack_ptr, fb->get_stack_ptr());
 
     Fiber::set_current_fiber(nullptr);
