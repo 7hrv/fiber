@@ -4,7 +4,11 @@
 #include "fiber.hpp"
 
 void Scheduler::add_to_queue(Fiber* fb) {
-  fb->load_stack_ptr(_stack_ptr);
+  _run_queue.push(fb);
+}
+
+void Scheduler::load_stack_ptr_and_add_to_queue(Fiber* fb) {
+  fb->set_scheduler_ptr(&_stack_ptr);
   _run_queue.push(fb);
 }
 
@@ -18,7 +22,7 @@ void Scheduler::run() {
     fb->set_state(Fiber::FiberState::RUNNING);
 
     // TODO: multi-level pointer conversion
-    context_switch(&_stack_ptr, fb->get_stack_ptr());
+    context_switch(&_stack_ptr, *fb->get_stack_ptr_addr());
 
     Fiber::set_current_fiber(nullptr);
 

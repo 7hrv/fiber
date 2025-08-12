@@ -1,3 +1,4 @@
+#include "context.hpp"
 #include "fiber.hpp"
 #include "scheduler.hpp"
 
@@ -42,20 +43,46 @@ void test_fibers() {
 
   Fiber one{[](Fiber* fb) {
     for (int i{}; i < ITERATIONS; ++i) {
-      fb->yield();
+      fb->yield_to_scheduler();
     }
   }};
 
   Fiber two{[](Fiber* fb) {
     for (int i{}; i < ITERATIONS; ++i) {
-      fb->yield();
+      fb->yield_to_scheduler();
     }
   }};
 
-  sched.add_to_queue(&one);
-  sched.add_to_queue(&two);
+  sched.load_stack_ptr_and_add_to_queue(&one);
+  sched.load_stack_ptr_and_add_to_queue(&two);
 
   sched.run();
+}
+
+void test_fiber_direct_yield() {
+  Fiber one{[](Fiber* fb) {
+    for (int i{}; i < ITERATIONS; ++i) {
+      fb->yield_to_peer();
+    }
+  }};
+
+  Fiber two{[](Fiber* fb) {
+    for (int i{}; i < ITERATIONS; ++i) {
+      fb->yield_to_peer();
+    }
+  }};
+
+  one.set_peer(&two);
+  two.set_peer(&one);
+
+  uint8_t* main_stack_ptr{nullptr};
+
+  one.set_exit_stack_ptr(&main_stack_ptr);
+  two.set_exit_stack_ptr(&main_stack_ptr);
+
+  Fiber::set_current_fiber(&one);
+
+  context_switch(&main_stack_ptr, *one.get_stack_ptr_addr());
 }
 
 int main() {
@@ -64,7 +91,7 @@ int main() {
   auto end_threads{std::chrono::high_resolution_clock::now()};
 
   std::chrono::duration<double, std::milli> duration_threads{end_threads - start_threads};
-  std::cout << "Executaion time for regular threads: " << duration_threads.count() << " ms\n";
+  std::cout << "Execution time for regular threads: " << duration_threads.count() << " ms\n";
 
   auto start_fibers{std::chrono::high_resolution_clock::now()};
   test_fibers();
@@ -72,6 +99,14 @@ int main() {
 
   std::chrono::duration<double, std::milli> duration_fibers{end_fibers - start_fibers};
   std::cout << "Execution time for regular fibers: " << duration_fibers.count() << " ms\n";
+
+  auto start_fibers_no_sched{std::chrono::high_resolution_clock::now()};
+  test_fiber_direct_yield();
+  auto end_fibers_no_sched{std::chrono::high_resolution_clock::now()};
+
+  std::chrono::duration<double, std::milli> duration_fibers_direct{end_fibers_no_sched -
+                                                                   start_fibers_no_sched};
+  std::cout << "Execution time for fiber direct yield " << duration_fibers_direct << " ms\n";
 
   return 0;
 }

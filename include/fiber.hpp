@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <new>
 
 class Fiber {
@@ -36,6 +37,7 @@ class Fiber {
     _stack_ptr = fib._stack_ptr;
     _scheduler_stack_ptr = fib._scheduler_stack_ptr;
     _entry = fib._entry;
+    _peer = fib._peer;
 
     ::operator delete(fib._call_stack);
   }
@@ -52,6 +54,7 @@ class Fiber {
     _stack_ptr = fib._stack_ptr;
     _scheduler_stack_ptr = fib._scheduler_stack_ptr;
     _entry = fib._entry;
+    _peer = fib._peer;
 
     ::operator delete(fib._call_stack);
 
@@ -62,19 +65,36 @@ class Fiber {
 
   void set_state(FiberState new_state) { _state = new_state; }
 
-  void load_stack_ptr(void*& scheduler_stack_ptr) { _scheduler_stack_ptr = &scheduler_stack_ptr; }
+  void set_scheduler_ptr(uint8_t** scheduler_ptr) { _scheduler_stack_ptr = scheduler_ptr; }
 
-  void* get_stack_ptr() { return _stack_ptr; }
+  void set_peer(Fiber* peer_fb) { _peer = peer_fb; }
+
+  void set_exit_stack_ptr(uint8_t** exit_stack_ptr) { _exit_stack_ptr = exit_stack_ptr; }
+
+  uint8_t** get_stack_ptr_addr() { return &_stack_ptr; }
 
   static void set_current_fiber(Fiber* fb) { _current = fb; }
 
   // have a fiber yield computation time
-  void yield() { context_switch(&_stack_ptr, *_scheduler_stack_ptr); }
+  void yield_to_scheduler() { context_switch(&_stack_ptr, *_scheduler_stack_ptr); }
+
+  void yield_to_peer() {
+    _current = _peer;
+    context_switch(&_stack_ptr, *_peer->get_stack_ptr_addr());
+  }
+
+  void yield_to_exit() { context_switch(&_stack_ptr, *_exit_stack_ptr); }
 
   static void execute() {
     _current->_entry(_current);
     _current->set_state(FiberState::DONE);
-    _current->yield();
+    if (_current->_scheduler_stack_ptr) {
+      _current->yield_to_scheduler();
+    } else if (_current->_peer->get_state() != FiberState::DONE) {
+      _current->yield_to_peer();
+    } else {
+      _current->yield_to_exit();
+    }
   }
 
  private:
@@ -84,6 +104,12 @@ class Fiber {
   FiberState _state{READY};
   uint8_t* _stack_ptr{nullptr};  // smoother pointer artihmetic
   uint8_t* _end_of_call_stack{nullptr};
-  void** _scheduler_stack_ptr{nullptr};
+
+  // the stack pointer of the fiber (or scheduler) to yield execution to
+  uint8_t** _scheduler_stack_ptr{nullptr};
+  uint8_t** _exit_stack_ptr{nullptr};
+
   EntryFn _entry;
+
+  Fiber* _peer;
 };
