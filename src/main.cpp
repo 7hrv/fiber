@@ -1,5 +1,6 @@
 #include "context.hpp"
-#include "fiber.hpp"
+#include "fiber_direct.hpp"
+#include "fiber_schedule.hpp"
 #include "scheduler.hpp"
 
 #include <chrono>
@@ -10,7 +11,7 @@
 #include <semaphore>
 #include <thread>
 
-constexpr int ITERATIONS{10'000'000};
+constexpr int ITERATIONS{1'000'000};
 
 void test_regular_threads() {
   std::binary_semaphore sem1{1};
@@ -41,15 +42,15 @@ void test_regular_threads() {
 void test_fibers() {
   Scheduler sched;
 
-  Fiber one{[](Fiber* fb) {
+  FiberSchedule one{[](Fiber* fb) {
     for (int i{}; i < ITERATIONS; ++i) {
-      fb->yield_to_scheduler();
+      fb->yield();
     }
   }};
 
-  Fiber two{[](Fiber* fb) {
+  FiberSchedule two{[](Fiber* fb) {
     for (int i{}; i < ITERATIONS; ++i) {
-      fb->yield_to_scheduler();
+      fb->yield();
     }
   }};
 
@@ -60,15 +61,15 @@ void test_fibers() {
 }
 
 void test_fiber_direct_yield() {
-  Fiber one{[](Fiber* fb) {
+  FiberDirect one{[](Fiber* fb) {
     for (int i{}; i < ITERATIONS; ++i) {
-      fb->yield_to_peer();
+      fb->yield();
     }
   }};
 
-  Fiber two{[](Fiber* fb) {
+  FiberDirect two{[](Fiber* fb) {
     for (int i{}; i < ITERATIONS; ++i) {
-      fb->yield_to_peer();
+      fb->yield();
     }
   }};
 
@@ -82,7 +83,7 @@ void test_fiber_direct_yield() {
 
   Fiber::set_current_fiber(&one);
 
-  context_switch(&main_stack_ptr, *one.get_stack_ptr_addr());
+  context_switch(static_cast<void*>(&main_stack_ptr), *one.get_stack_ptr_addr());
 }
 
 int main() {
