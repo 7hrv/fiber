@@ -17,14 +17,14 @@ void test_regular_threads() {
   std::binary_semaphore sem1{1};
   std::binary_semaphore sem2{0};
 
-  std::jthread one{[&]() {
+  std::jthread one{[&] {
     for (int i{}; i < ITERATIONS; ++i) {
       sem1.acquire();
       sem2.release();
     }
   }};
 
-  std::jthread two{[&]() {
+  std::jthread two{[&] {
     for (int i{}; i < ITERATIONS; ++i) {
       sem2.acquire();
       sem1.release();

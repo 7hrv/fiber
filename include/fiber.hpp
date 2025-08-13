@@ -3,13 +3,14 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <functional>
 #include <new>
 
 class Fiber {
  public:
   static constexpr std::size_t STACK_SIZE{64 * 1024uz};  // 64 KiB
 
-  using EntryFn = void (*)(Fiber*);
+  using EntryFn = std::function<void(Fiber*)>;
 
   enum FiberState : uint8_t {
     READY,
