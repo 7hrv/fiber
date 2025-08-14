@@ -22,4 +22,4 @@ Preliminary results on my machine (median of 10 runs; see [benchmarks](./benchma
 OS threads are switched by the kernel: a trap into kernel mode, a scheduling decision,
 and a return to user mode, with the kernel's work competing with the application for cache. The cost and its variability both matter when many tasks mostly wait and
 hand control back and forth.
-Fibers move the scheduling decision into the application, at the cost of cooperative switching and all fibers running on one core per scheduler.
+Fibers move the scheduling decision into the application, which allows for deterministic context switching between fibers, at the cost of cooperative switching and all fibers running on one core per scheduler.
