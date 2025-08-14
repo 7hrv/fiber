@@ -66,25 +66,37 @@ inline void print(Report rp) {
   const double med{percentile(rp.run_ns, 0.5)};
   const double cpu{rp.usage.user_s + rp.usage.sys_s};
 
-  std::printf("== %s ==\n", rp.name);
-  std::printf("handoff latency median %.1f ns min %.1f IQR %.1f-%.1f (%zu runs)\n",
-              med,
-              rp.run_ns.front(),
+  constexpr const char* rule{"------------------------------------------------------------"};
+
+  std::printf("%s\n %s\n%s\n", rule, rp.name, rule);
+
+  std::printf(" Handoff latency (%zu runs)\n", rp.run_ns.size());
+  std::printf("   %-16s %9.2f ns\n", "median", med);
+  std::printf("   %-16s %9.2f ns\n", "min", rp.run_ns.front());
+  std::printf("   %-16s %9.2f - %.2f ns\n",
+              "IQR (25-75%)",
               percentile(rp.run_ns, 0.25),
-              percentile(rp.run_ns, 0.75),
-              rp.run_ns.size());
-  std::printf("throughput %.2f M handoffs\n", 1e3 / med);
-  std::printf("tail (sampled) p50 %.0f p99 %.0f p99.9 %.0f max %.0f ns (%zu samples)\n",
-              percentile(rp.sample_ns, 0.5),
-              percentile(rp.sample_ns, 0.99),
-              percentile(rp.sample_ns, 0.999),
-              rp.sample_ns.back(),
-              rp.sample_ns.size());
-  std::printf("kernel %.3f voluntary cs/handoff %.5f involuntary, %.0f%% of CPU time in kernel\n",
-              rp.usage.voluntary_cs / rp.handoffs,
-              rp.usage.involuntary_cs / rp.handoffs,
+              percentile(rp.run_ns, 0.75));
+  std::printf("   %-16s %9.1f M/s\n", "throughput", 1e3 / med);
+
+  if (!rp.sample_ns.empty()) {
+    std::printf(" Tail (%zu samples)\n", rp.sample_ns.size());
+    std::printf("   %-16s %9.1f ns\n", "p50", percentile(rp.sample_ns, 0.50));
+    std::printf("   %-16s %9.1f ns\n", "p99", percentile(rp.sample_ns, 0.99));
+    std::printf("   %-16s %9.1f ns\n", "p99.9", percentile(rp.sample_ns, 0.999));
+    std::printf("   %-16s %9.1f ns\n", "max", rp.sample_ns.back());
+  }
+
+  std::printf(" Kernel\n");
+  std::printf("   %-16s %9.5f per handoff\n", "voluntary cs", rp.usage.voluntary_cs / rp.handoffs);
+  std::printf(
+      "   %-16s %9.5f per handoff\n", "involuntary cs", rp.usage.involuntary_cs / rp.handoffs);
+  std::printf("   %-16s %9.1f %% of CPU time\n",
+              "kernel time",
               cpu > 0 ? 100.0 * rp.usage.sys_s / cpu : 0.0);
-  std::printf("clock overhead %.1f ns pernow call\n\n", rp.clock_ns);
+
+  std::printf(" Clock overhead      %9.1f ns per now() call\n", rp.clock_ns);
+  std::printf("%s\n\n", rule);
 }
 
 };  // namespace bench
